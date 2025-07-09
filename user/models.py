@@ -1,5 +1,9 @@
 from django.db import models
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.models import (
+    AbstractBaseUser,
+    BaseUserManager,
+    PermissionsMixin,
+)
 
 Student, Teacher, Admin, Accountant = "Student", "Teacher", "Admin", "Accountant"
 
@@ -14,8 +18,9 @@ class UserManager(BaseUserManager):
         return user
 
     def create_superuser(self, phone_number, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("is_admin", True)
+        
         return self.create_user(phone_number, password, **extra_fields)
 
 
@@ -28,11 +33,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
-    phone_number = models.CharField(max_length=15)
-    date_of_birth = models.DateField()
+    phone_number = models.CharField(max_length=15, unique=True)
     role = models.CharField(max_length=255, choices=ROLES, default=Student)
+    is_staff = models.BooleanField(default=False)
     group = models.ForeignKey(
-        "user.Group", on_delete=models.SET_NULL, related_name="students"
+        "user.Group",
+        related_name="students",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
 
     objects = UserManager()
@@ -46,7 +55,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Group(models.Model):
     name = models.CharField(max_length=255)
     level = models.CharField(max_length=255)
-    teacher = models.ForeignKey("user.User", on_delete=models.SET_NULL)
+    teacher = models.ForeignKey(
+        "user.User",
+        on_delete=models.SET_NULL,
+        related_name="teacher",
+        null=True,
+    )
 
     def __str__(self):
         return self.name
@@ -55,7 +69,9 @@ class Group(models.Model):
 class Lesson(models.Model):
     name = models.CharField(max_length=55, blank=True)
     date = models.DateField()
-    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name="lesson")
+    group = models.ForeignKey(
+        Group, on_delete=models.SET_NULL, related_name="lesson", null=True
+    )
 
     def __str__(self):
         return self.name
@@ -73,10 +89,10 @@ class Homework(models.Model):
 
 
 class Attendance(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL)
+    lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True)
     come_to_lesson = models.BooleanField()
     student = models.ForeignKey(
-        User, on_delete=models.SET_NULL, related_name="attendance"
+        User, on_delete=models.SET_NULL, related_name="attendance", null=True
     )
 
     def __str__(self):
