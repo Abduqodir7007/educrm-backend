@@ -20,7 +20,7 @@ class UserManager(BaseUserManager):
     def create_superuser(self, phone_number, password=None, **extra_fields):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
-        
+
         return self.create_user(phone_number, password, **extra_fields)
 
 
@@ -54,7 +54,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Group(models.Model):
     name = models.CharField(max_length=255)
-    level = models.CharField(max_length=255)
+    level = models.CharField(max_length=255, blank=True, null=True)
+    monthly_fee = models.PositiveSmallIntegerField()
+    max_students = models.PositiveSmallIntegerField(
+        default=15, help_text="Maximum number of students in a group"
+    )
     teacher = models.ForeignKey(
         "user.User",
         on_delete=models.SET_NULL,

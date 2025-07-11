@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from user.utils import generate_token
+from user.utils import generate_token, validate_time
 from .models import User, Group, Attendance, Homework, Lesson
 from rest_framework.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
@@ -57,12 +57,45 @@ class LoginSerializer(serializers.Serializer):
         user = authenticate(phone_number=phone_number, password=password)
         if user is None:
             raise ValidationError({"msg": "Invalid credentials"})
-       
 
         self.user = user
 
     def validate(self, data):
         self.auth_validate(data)
         token = generate_token(self.user)
-        data['token'] = token
+        data["token"] = token
         return data
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "role"]
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    teacher = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Group
+        fields = ["id", "name", "level", "teacher"]
+
+
+class LessonSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField()
+    date = serializers.DateField()
+    group = GroupSerializer(read_only=True)
+
+    # def validate_date(self, value):
+    #     validate_time(value)
+
+    def validate_name(self, value):
+        if value.isdigit():
+            raise ValidationError(
+                {"msg": "Name of the lesson cannot be entirely numeric"}
+            )
+        return value
+
+    def create(self, validated_data):
+        return Lesson.objects.create(**validated_data)

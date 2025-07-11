@@ -1,18 +1,38 @@
 from django.contrib import admin
 from .models import User, Group, Attendance, Lesson, Homework, Teacher
+from django.contrib.auth.admin import UserAdmin
 
 
-class UserAdmin(admin.ModelAdmin):
-    list_display = ("id", "full_name")
+class CustomUserAdmin(UserAdmin):
+    add_fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "first_name",
+                    "last_name",
+                    "phone_number",
+                    "role",
+                    "group",
+                    "is_staff",
+                    "password1",
+                    "password2",
+                ),
+            },
+        ),
+    )
+    fieldsets = (
+        (None, {"fields": ("phone_number", "password")}),
+        ("Personal Info", {"fields": ("first_name", "last_name", "group")}),
+        ("Permissions", {"fields": ("role", "is_staff")}),
+    )
+    list_display = ("first_name", "last_name", "role")
+    list_filter = ("role",)
+    search_fields = ("phone_number", "first_name", "last_name")
+    ordering = ("first_name",)
 
-    def full_name(self, obj):
-        first_name = obj.first_name.title()
-        last_name = obj.last_name.title()
-        return f"{last_name} {first_name}"
-    
-    full_name.short_description  = 'full_name'
 
-admin.site.register(User, UserAdmin)
+admin.site.register(User, CustomUserAdmin)
 
 
 class GroupAdmin(admin.ModelAdmin):
@@ -20,7 +40,7 @@ class GroupAdmin(admin.ModelAdmin):
     list_filter = ("teacher",)
     search_fields = ("teacher", "name")
 
-    def formfiel_for_foreignkey(self, db_field, request, **kwargs):
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "teacher":
             kwargs["queryset"] = User.objects.filter(role=Teacher)
         return super(GroupAdmin, self).formfield_for_foreignkey(
