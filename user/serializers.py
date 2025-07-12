@@ -82,10 +82,11 @@ class GroupSerializer(serializers.ModelSerializer):
 
 
 class LessonSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
+    id = serializers.IntegerField(read_only=True)
     name = serializers.CharField()
     date = serializers.DateField()
-    group = GroupSerializer(read_only=True)
+    
+    #group = GroupSerializer(read_only=True)
 
     # def validate_date(self, value):
     #     validate_time(value)
@@ -99,3 +100,19 @@ class LessonSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         return Lesson.objects.create(**validated_data)
+
+
+class HomeworkSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    task = serializers.CharField()
+    lesson = LessonSerializer(read_only=True)
+
+    def create(self, validated_data):
+        return Homework.objects.create(**validated_data)
+
+    def update(self, instance, validated_data):
+        instance.task = validated_data.get("task", instance.task)
+        instance.lesson = validated_data.get("group", instance.lesson)
+        instance.save()
+        return instance
+    

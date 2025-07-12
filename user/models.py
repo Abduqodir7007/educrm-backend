@@ -82,8 +82,7 @@ class Lesson(models.Model):
 
 
 class Homework(models.Model):
-    task = models.TextField(max_length=255)
-    date = models.DateField()
+    task = models.TextField(max_length=300)
     lesson = models.ForeignKey(
         Lesson, on_delete=models.CASCADE, related_name="homeworks"
     )
