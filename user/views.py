@@ -40,9 +40,6 @@ class LoginView(APIView):
         )
 
 
-
-
-
 class GroupView(APIView):
     def get(self, request):
         groups = Group.objects.all()
@@ -51,7 +48,10 @@ class GroupView(APIView):
 
 
 class LessonView(APIView):
-    permission_classes = [IsTeacher, ]
+    permission_classes = [
+        IsTeacher,
+    ]
+
     def get(self, request, pk):
         group = Group.objects.get(id=pk)
         lessons = group.lesson.all()
@@ -96,7 +96,9 @@ class HomeworkView(APIView):
 
 
 class HomeworkUpdateView(APIView):
-    permission_classes = [IsTeacher,]
+    permission_classes = [
+        IsTeacher,
+    ]
 
     def put(self, request, pk):
         try:
@@ -137,22 +139,22 @@ class ProfileView(APIView):
         elif user.role in ("Admin", "Teacher") and user.is_superuser:
 
             total_users = User.objects.all().count()
-            total_teachers = User.objects.filter(role="teacher").count()
-            total_students = User.objects.filter(role="student").count()
+            total_teachers = User.objects.filter(role=Teacher).count()
+            total_students = User.objects.filter(role=Student).count()
             total_groups = Group.objects.all().count()
             total_profit = 0
 
             for group in Group.objects.all():
                 fee = group.monthly_fee
-                student_count = User.objects.filter(
-                    group=group
-                ).count()  # assuming M2M or FK from user to group
+                student_count = User.objects.filter(group=group).count()
                 total_profit += fee * student_count
 
-            return {
-                "total_users": total_users,
-                "total_teacher": total_teachers,
-                "total_students": total_students,
-                "total_groups": total_groups,
-                "total_profit": total_profit,
-            }
+            return Response(
+                {
+                    "total_users": total_users,
+                    "total_teacher": total_teachers,
+                    "total_students": total_students,
+                    "total_groups": total_groups,
+                    "total_profit": total_profit,
+                }
+            )
