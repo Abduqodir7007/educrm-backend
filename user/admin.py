@@ -15,6 +15,7 @@ class CustomUserAdmin(UserAdmin):
                     "role",
                     "group",
                     "is_staff",
+                    "is_superuser",
                     "password1",
                     "password2",
                 ),
@@ -24,12 +25,18 @@ class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {"fields": ("phone_number", "password")}),
         ("Personal Info", {"fields": ("first_name", "last_name", "group")}),
-        ("Permissions", {"fields": ("role", "is_staff")}),
+        ("Permissions", {"fields": ("role", "is_staff", "is_superuser")}),
     )
-    list_display = ("first_name", "last_name", "role")
+    list_display = ("id", "full_name", "phone_number", "role")
     list_filter = ("role",)
     search_fields = ("phone_number", "first_name", "last_name")
     ordering = ("first_name",)
+
+    def full_name(self, obj):
+        first_name = obj.first_name.title()
+        last_name = obj.last_name.title()
+
+        return f"{first_name} {last_name}"
 
 
 admin.site.register(User, CustomUserAdmin)

@@ -1,9 +1,10 @@
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework import status
-from user.utils import generate_token
-from .models import User, Lesson, Attendance, Homework, Group
+from user.utils import generate_token, IsTeacher
+from .models import Admin, Student, Teacher, User, Lesson, Attendance, Homework, Group
 from rest_framework.views import APIView
+from rest_framework.permissions import AllowAny
 from .serializers import (
     GroupSerializer,
     HomeworkSerializer,
@@ -14,6 +15,9 @@ from .serializers import (
 
 
 class SignupView(APIView):
+    permission_classes = [
+        AllowAny,
+    ]
 
     def post(self, request):
         serializer = SignUpSerializer(data=request.data)
@@ -24,6 +28,9 @@ class SignupView(APIView):
 
 
 class LoginView(APIView):
+    permission_classes = [
+        AllowAny,
+    ]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -33,7 +40,7 @@ class LoginView(APIView):
         )
 
 
-4
+
 
 
 class GroupView(APIView):
@@ -44,7 +51,7 @@ class GroupView(APIView):
 
 
 class LessonView(APIView):
-
+    permission_classes = [IsTeacher, ]
     def get(self, request, pk):
         group = Group.objects.get(id=pk)
         lessons = group.lesson.all()
@@ -73,7 +80,6 @@ class HomeworkView(APIView):
         homeworks = lesson.homeworks.all()
 
         serializer = HomeworkSerializer(homeworks, many=True).data
-        # serializer.is_valid(raise_exception=True)
         return Response(serializer)
 
     def post(self, request, pk):
@@ -90,13 +96,14 @@ class HomeworkView(APIView):
 
 
 class HomeworkUpdateView(APIView):
+    permission_classes = [IsTeacher,]
 
     def put(self, request, pk):
         try:
             homework = Homework.objects.get(id=pk)
         except Homework.DoesNotExist:
             return Response({"msg": "Does not exists"})
-        
+
         serializer = HomeworkSerializer(homework, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -107,9 +114,45 @@ class HomeworkUpdateView(APIView):
             homework = Homework.objects.get(id=pk)
         except Homework.DoesNotExist:
             return Response({"msg": "Does not exists"})
-        
+
         homework.delete()
 
         return Response({"msg": "Deleted"})
-    
 
+
+class ProfileView(APIView):
+
+    def get(self, request):
+        user = request.user
+        if user.role == Student:
+            group = user.group
+            serializer = GroupSerializer(group, many=True)
+            return Response({"data": serializer.data})
+
+        elif user.role == Teacher:
+            group = user.teacher.all()
+            serializer = GroupSerializer(group, many=True)
+            return Response({"data": serializer.data})
+
+        elif user.role in ("Admin", "Teacher") and user.is_superuser:
+
+            total_users = User.objects.all().count()
+            total_teachers = User.objects.filter(role="teacher").count()
+            total_students = User.objects.filter(role="student").count()
+            total_groups = Group.objects.all().count()
+            total_profit = 0
+
+            for group in Group.objects.all():
+                fee = group.monthly_fee
+                student_count = User.objects.filter(
+                    group=group
+                ).count()  # assuming M2M or FK from user to group
+                total_profit += fee * student_count
+
+            return {
+                "total_users": total_users,
+                "total_teacher": total_teachers,
+                "total_students": total_students,
+                "total_groups": total_groups,
+                "total_profit": total_profit,
+            }

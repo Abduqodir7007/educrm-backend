@@ -38,7 +38,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     group = models.ForeignKey(
         "user.Group",
-        related_name="students",
+        related_name="groups",
         on_delete=models.CASCADE,
         null=True,
         blank=True,

@@ -6,6 +6,7 @@ from .views import (
     GroupView,
     LessonView,
     HomeworkUpdateView,
+    ProfileView,
 )
 
 urlpatterns = [
@@ -15,5 +16,5 @@ urlpatterns = [
     path("group/<str:pk>/lesson/", LessonView.as_view()),
     path("lesson/<str:pk>/homework/", HomeworkView.as_view()),
     path("homework/<str:pk>/", HomeworkUpdateView.as_view()),
-    
+    path("me/", ProfileView.as_view()),
 ]
