@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework import status
 from user.utils import generate_token, IsTeacher
@@ -6,6 +7,7 @@ from .models import Admin, Student, Teacher, User, Lesson, Attendance, Homework,
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from .serializers import (
+    AttendanceSerializer,
     GroupSerializer,
     HomeworkSerializer,
     LessonSerializer,
@@ -158,3 +160,42 @@ class ProfileView(APIView):
                     "total_profit": total_profit,
                 }
             )
+
+
+class AttendanceView(APIView):
+    def post(self, request, pk):
+        try:
+            lesson = Lesson.objects.get(id=pk)
+        except NotFound:
+            return Response({"msg": "Not found"})
+
+        data = request.data
+        serializer = AttendanceSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        for item in data:
+            student = User.objects.get(id=item["student_id"])
+            come_to_lesson = item["come_to_lesson"]
+
+            Attendance.objects.create(
+                student=student, come_to_lesson=come_to_lesson, lesson=lesson
+            )
+        return Response({"msg": "attandance created"})
+
+    # update attendance
+    def put(self, request, pk):
+        lesson = Lesson.objects.get(id=pk)
+        serializer = AttendanceSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
+        for item in serializer.validated_data:
+
+            student = User.objects.get(id=item["student_id"])
+            come_to_lesson = item["come_to_lesson"]
+
+            Attendance.objects.update_or_create(
+                lesson=lesson,
+                student=student,
+                defaults={"come_to_lesson": come_to_lesson},
+            )
+
+        return Response({"msg": "Attendance changed!"})

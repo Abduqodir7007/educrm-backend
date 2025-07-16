@@ -92,7 +92,7 @@ class Homework(models.Model):
 
 
 class Attendance(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True)
+    lesson = models.ForeignKey(Lesson, on_delete=models.SET_NULL, null=True, related_name='attendance')
     come_to_lesson = models.BooleanField()
     student = models.ForeignKey(
         User, on_delete=models.SET_NULL, related_name="attendance", null=True

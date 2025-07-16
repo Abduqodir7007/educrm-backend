@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from user.utils import generate_token, validate_time
 from .models import User, Group, Attendance, Homework, Lesson
 from rest_framework.exceptions import ValidationError
@@ -85,8 +84,8 @@ class LessonSerializer(serializers.Serializer):
     id = serializers.IntegerField(read_only=True)
     name = serializers.CharField()
     date = serializers.DateField()
-    
-    #group = GroupSerializer(read_only=True)
+
+    # group = GroupSerializer(read_only=True)
 
     # def validate_date(self, value):
     #     validate_time(value)
@@ -115,4 +114,14 @@ class HomeworkSerializer(serializers.Serializer):
         instance.lesson = validated_data.get("group", instance.lesson)
         instance.save()
         return instance
-    
+
+
+class AttendanceSerializer(serializers.Serializer):
+    student_id = serializers.IntegerField()
+    come_to_lesson = serializers.BooleanField()
+
+    def validate(self, data):
+        user = User.objects.get(id=data["student_id"])
+        if user.role in ("Teacher", "Admin"):
+            raise ValidationError({"msg": "User is teacher or admin"})
+        return data

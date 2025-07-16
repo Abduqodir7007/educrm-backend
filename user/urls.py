@@ -7,6 +7,7 @@ from .views import (
     LessonView,
     HomeworkUpdateView,
     ProfileView,
+    AttendanceView,
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path("lesson/<str:pk>/homework/", HomeworkView.as_view()),
     path("homework/<str:pk>/", HomeworkUpdateView.as_view()),
     path("me/", ProfileView.as_view()),
+    path("lesson/<str:pk>/attendance/", AttendanceView.as_view()),
 ]

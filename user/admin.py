@@ -27,7 +27,7 @@ class CustomUserAdmin(UserAdmin):
         ("Personal Info", {"fields": ("first_name", "last_name", "group")}),
         ("Permissions", {"fields": ("role", "is_staff", "is_superuser")}),
     )
-    list_display = ("id", "full_name", "phone_number", "role")
+    list_display = ("id", "full_name", "group", "phone_number", "role")
     list_filter = ("role",)
     search_fields = ("phone_number", "first_name", "last_name")
     ordering = ("first_name",)
@@ -74,7 +74,7 @@ admin.site.register(Homework, HomeworkAdmin)
 
 
 class AttendanceAdmin(admin.ModelAdmin):
-    list_display = ("id",)
+    list_display = ("id", "student", "come_to_lesson")
 
 
 admin.site.register(Attendance, AttendanceAdmin)
