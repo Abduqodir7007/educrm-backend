@@ -48,6 +48,6 @@ class Attendance(models.Model):
     student = models.ForeignKey(
         User, on_delete=models.SET_NULL, related_name="attendance", null=True
     )
-
+    
     def __str__(self):
         return f"{self.lesson.name} lesson's attendance"

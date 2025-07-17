@@ -2,19 +2,35 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from management.models import Attendance, Lesson, Homework, Group
-from management.serializers import AttendanceSerializer, GroupSerializer, HomeworkSerializer, LessonSerializer
+from management.serializers import (
+    AttendanceGetSerializer,
+    AttendanceSerializer,
+    GroupSerializer,
+    HomeworkSerializer,
+    LessonSerializer,
+    UserSerializer,
+)
 from rest_framework import status
 from user.utils import IsTeacher
 from rest_framework.exceptions import NotFound
 from user.models import User, Teacher, Student
+from datetime import date
 
-# Create your views here.
 
 class GroupView(APIView):
     def get(self, request):
         groups = Group.objects.all()
         serializer = GroupSerializer(groups, many=True).data
         return Response({"data": serializer}, status=status.HTTP_200_OK)
+
+
+class GroupStudentsView(APIView):
+    def get(self, request, pk):
+        group = Group.objects.get(id=pk)
+        students = group.students.all()
+        serializer = UserSerializer(students, many=True).data
+
+        return Response(serializer, status=status.HTTP_200_OK)
 
 
 class LessonView(APIView):
@@ -167,3 +183,37 @@ class AttendanceView(APIView):
             )
 
         return Response({"msg": "Attendance changed!"})
+
+
+class AttendanceGetView(APIView):
+    def get(self, request, pk):
+        group = Group.objects.get(id=pk)
+        date_from = request.query_params.get("date_from")
+        date_to = request.query_params.get("date_to")
+        if date_from and date_to:
+            attendances = Attendance.objects.filter(
+                lesson__date__range=[date_from, date_to]
+            )
+        else:
+
+            start_of_month = date.today().replace(day=1)
+            attendances = Attendance.objects.filter(
+                lesson__group=group, lesson__date__gte=start_of_month
+            ).select_related("lesson", "student")
+
+        result = []
+        for att in attendances:
+            result.append(
+                {
+                    "date": att.lesson.date,
+                    "lesson_id": att.lesson.id,
+                    "attendances": [
+                        {
+                            "student_id": att.student.id,
+                            "come_to_lesson": att.come_to_lesson,
+                        }
+                    ],
+                }
+            )
+
+        return Response(result)

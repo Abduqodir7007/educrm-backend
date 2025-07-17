@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from management.models import Group, Homework, Lesson
+from management.models import Attendance, Group, Homework, Lesson
 from user.models import User
 from rest_framework.exceptions import NotFound
 
@@ -8,7 +8,7 @@ from rest_framework.exceptions import NotFound
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["first_name", "last_name", "role"]
+        fields = ["id", "first_name", "last_name", "role"]
 
 
 class GroupSerializer(serializers.ModelSerializer):
@@ -64,3 +64,13 @@ class AttendanceSerializer(serializers.Serializer):
         if user.role in ("Teacher", "Admin"):
             raise ValidationError({"msg": "User is teacher or admin"})
         return data
+
+
+class AttendanceGetSerializer(serializers.Serializer):  
+    id = serializers.IntegerField()
+    student = UserSerializer()
+    come_to_lesson = serializers.BooleanField()
+    date = serializers.SerializerMethodField()
+    
+    def get_date(self, obj):
+        pass 
