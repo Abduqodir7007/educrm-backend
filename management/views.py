@@ -1,0 +1,169 @@
+from django.shortcuts import render
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from management.models import Attendance, Lesson, Homework, Group
+from management.serializers import AttendanceSerializer, GroupSerializer, HomeworkSerializer, LessonSerializer
+from rest_framework import status
+from user.utils import IsTeacher
+from rest_framework.exceptions import NotFound
+from user.models import User, Teacher, Student
+
+# Create your views here.
+
+class GroupView(APIView):
+    def get(self, request):
+        groups = Group.objects.all()
+        serializer = GroupSerializer(groups, many=True).data
+        return Response({"data": serializer}, status=status.HTTP_200_OK)
+
+
+class LessonView(APIView):
+    permission_classes = [
+        IsTeacher,
+    ]
+
+    def get(self, request, pk):
+        group = Group.objects.get(id=pk)
+        lessons = group.lesson.all()
+        serializer = LessonSerializer(lessons, many=True).data
+
+        return Response(serializer)
+
+    def post(self, request, pk):
+        try:
+            group = Group.objects.get(id=pk)
+        except Group.DoesNotExist:
+            return Response({"msg": "Group does not exists!"})
+
+        serializer = LessonSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save(group=group)
+
+        return Response({"msg": "Lesson created successfully"})
+
+
+class HomeworkView(APIView):
+
+    def get(self, request, pk):
+        lesson = Lesson.objects.get(id=pk)
+        homeworks = lesson.homeworks.all()
+
+        serializer = HomeworkSerializer(homeworks, many=True).data
+        return Response(serializer)
+
+    def post(self, request, pk):
+        try:
+            lesson = Lesson.objects.get(id=pk)
+        except Lesson.DoesNotExist:
+            return Response({"msg": "Lesson does not exists!"})
+
+        serializer = HomeworkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(lesson=lesson)
+
+        return Response({"msg": "Homework created"})
+
+
+class HomeworkUpdateView(APIView):
+    permission_classes = [
+        IsTeacher,
+    ]
+
+    def put(self, request, pk):
+        try:
+            homework = Homework.objects.get(id=pk)
+        except Homework.DoesNotExist:
+            return Response({"msg": "Does not exists"})
+
+        serializer = HomeworkSerializer(homework, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"msg": "Updated successfully"})
+
+    def delete(self, request, pk):
+        try:
+            homework = Homework.objects.get(id=pk)
+        except Homework.DoesNotExist:
+            return Response({"msg": "Does not exists"})
+
+        homework.delete()
+
+        return Response({"msg": "Deleted"})
+
+
+class ProfileView(APIView):
+
+    def get(self, request):
+        user = request.user
+        if user.role == Student:
+            group = user.group
+            serializer = GroupSerializer(group, many=True)
+            return Response({"data": serializer.data})
+
+        elif user.role == Teacher:
+            group = user.teacher.all()
+            serializer = GroupSerializer(group, many=True)
+            return Response({"data": serializer.data})
+
+        elif user.role in ("Admin", "Teacher") and user.is_superuser:
+
+            total_users = User.objects.all().count()
+            total_teachers = User.objects.filter(role=Teacher).count()
+            total_students = User.objects.filter(role=Student).count()
+            total_groups = Group.objects.all().count()
+            total_profit = 0
+
+            for group in Group.objects.all():
+                fee = group.monthly_fee
+                student_count = User.objects.filter(group=group).count()
+                total_profit += fee * student_count
+
+            return Response(
+                {
+                    "total_users": total_users,
+                    "total_teacher": total_teachers,
+                    "total_students": total_students,
+                    "total_groups": total_groups,
+                    "total_profit": total_profit,
+                }
+            )
+
+
+class AttendanceView(APIView):
+    def post(self, request, pk):
+        try:
+            lesson = Lesson.objects.get(id=pk)
+        except NotFound:
+            return Response({"msg": "Not found"})
+
+        data = request.data
+        serializer = AttendanceSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        for item in data:
+            student = User.objects.get(id=item["student_id"])
+            come_to_lesson = item["come_to_lesson"]
+
+            Attendance.objects.create(
+                student=student, come_to_lesson=come_to_lesson, lesson=lesson
+            )
+        return Response({"msg": "attandance created"})
+
+    # update attendance
+    def put(self, request, pk):
+        lesson = Lesson.objects.get(id=pk)
+        serializer = AttendanceSerializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        print(serializer.validated_data)
+        for item in serializer.validated_data:
+
+            student = User.objects.get(id=item["student_id"])
+            come_to_lesson = item["come_to_lesson"]
+
+            Attendance.objects.update_or_create(
+                lesson=lesson,
+                student=student,
+                defaults={"come_to_lesson": come_to_lesson},
+            )
+
+        return Response({"msg": "Attendance changed!"})
