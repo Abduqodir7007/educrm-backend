@@ -1,29 +1,37 @@
-from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from management.models import Attendance, Lesson, Homework, Group
+from rest_framework import status
+from user.utils import IsTeacher
+from rest_framework.exceptions import NotFound
+from user.models import User, Teacher, Student
+from datetime import date
 from management.serializers import (
-    AttendanceGetSerializer,
     AttendanceSerializer,
     GroupSerializer,
     HomeworkSerializer,
     LessonSerializer,
     UserSerializer,
 )
-from rest_framework import status
-from user.utils import IsTeacher
-from rest_framework.exceptions import NotFound
-from user.models import User, Teacher, Student
-from datetime import date
 
 
+# get all groups
 class GroupView(APIView):
     def get(self, request):
         groups = Group.objects.all()
         serializer = GroupSerializer(groups, many=True).data
         return Response({"data": serializer}, status=status.HTTP_200_OK)
 
+    # TO DO
+    # def post(self, request):
+    #     data = request.data
 
+    #     name = request.get('name')
+    #     level = request.get('level')
+    #     monthly_fee = request.get('monthly')
+
+
+# get the list of students in a group
 class GroupStudentsView(APIView):
     def get(self, request, pk):
         group = Group.objects.get(id=pk)
@@ -81,6 +89,7 @@ class HomeworkView(APIView):
         return Response({"msg": "Homework created"})
 
 
+# update homework
 class HomeworkUpdateView(APIView):
     permission_classes = [
         IsTeacher,
@@ -146,7 +155,10 @@ class ProfileView(APIView):
             )
 
 
+# create attendance
 class AttendanceView(APIView):
+    permission_classes = [IsTeacher]
+
     def post(self, request, pk):
         try:
             lesson = Lesson.objects.get(id=pk)
@@ -185,7 +197,12 @@ class AttendanceView(APIView):
         return Response({"msg": "Attendance changed!"})
 
 
+# get attendance data
 class AttendanceGetView(APIView):
+    permission_classes = [
+        IsTeacher,
+    ]
+
     def get(self, request, pk):
         group = Group.objects.get(id=pk)
         date_from = request.query_params.get("date_from")

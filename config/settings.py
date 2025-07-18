@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     # local apps
     "user",
     "management",
+    "ai_assistant",
 ]
 
 REST_FRAMEWORK = {

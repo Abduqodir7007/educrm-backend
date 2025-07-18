@@ -64,4 +64,3 @@ class LoginSerializer(serializers.Serializer):
         token = generate_token(self.user)
         data["token"] = token
         return data
-

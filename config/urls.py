@@ -22,4 +22,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("user.urls")),
     path("", include("management.urls")),
+    path("", include("ai_assistant.urls")),
 ]
