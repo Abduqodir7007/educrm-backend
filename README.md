@@ -7,7 +7,8 @@ Why i build this project?
 
 I started this project for the sake of learning new thing and becoming good backend developer. 
 I am sure building is the most efficient way of learning.
-
+Current Date: 18.07.2025
+Project is not finished yet.
 
 ## 🚀 Features
 
