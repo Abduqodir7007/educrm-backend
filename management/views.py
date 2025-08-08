@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from management.models import Attendance, Lesson, Homework, Group
 from rest_framework import status
 from user.utils import IsTeacher
+from django.db.models import Count, F, Sum, ExpressionWrapper, IntegerField
 from rest_framework.exceptions import NotFound
 from user.models import User, Teacher, Student
 from datetime import date
@@ -137,12 +138,17 @@ class ProfileView(APIView):
             total_teachers = User.objects.filter(role=Teacher).count()
             total_students = User.objects.filter(role=Student).count()
             total_groups = Group.objects.all().count()
-            total_profit = 0
 
-            for group in Group.objects.all():
-                fee = group.monthly_fee
-                student_count = User.objects.filter(group=group).count()
-                total_profit += fee * student_count
+            # for group in Group.objects.all():
+            #     fee = group.monthly_fee
+            #     student_count = User.objects.filter(group=group).count()
+            #     total_profit += fee * student_count
+            
+            total_profit = Group.objects.annotate(
+                profit=ExpressionWrapper(
+                    F("monthly_fee") * Count("students"), output_field=IntegerField()
+                )
+            ).aggregate(total=Sum("profit"))["total"]
 
             return Response(
                 {
@@ -207,6 +213,7 @@ class AttendanceGetView(APIView):
         group = Group.objects.get(id=pk)
         date_from = request.query_params.get("date_from")
         date_to = request.query_params.get("date_to")
+        
         if date_from and date_to:
             attendances = Attendance.objects.filter(
                 lesson__date__range=[date_from, date_to]
